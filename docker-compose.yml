@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  speech-to-text-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: speech-to-text-api:latest
+    container_name: speech-to-text-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Optionnel: montage pour le développement (décommentez si nécessaire)
+      - ./app:/app/app
+    restart: unless-stopped
+    environment:
+      - WHISPER_MODEL=base  # Vous pouvez changer pour tiny, base, small, medium, large
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s  # Donnez du temps pour le chargement initial du modèle
+
+  # Service optionnel pour les tests
+  test-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: speech-to-text-api:latest
+    command: python -m pytest -v
+    volumes:
+      - ./tests:/app/tests
+    depends_on:
+      - speech-to-text-api
+    profiles:
+      - test  # Ce service ne démarre que si le profil "test" est activé
